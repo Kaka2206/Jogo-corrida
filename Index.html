@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Jogo de Corrida</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #222;
+    }
+    canvas {
+      display: block;
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player = {
+  x: 100,
+  y: canvas.height / 2,
+  width: 50,
+  height: 30,
+  speed: 6
+};
+
+let enemies = [];
+let gameOver = false;
+
+function spawnEnemy() {
+  let lane = Math.random() > 0.5 ? canvas.height * 0.3 : canvas.height * 0.7;
+  enemies.push({
+    x: canvas.width,
+    y: lane,
+    width: 50,
+    height: 30,
+    speed: 7
+  });
+}
+
+setInterval(spawnEnemy, 1200);
+
+let keys = {};
+
+document.addEventListener("keydown", (e) => keys[e.key] = true);
+document.addEventListener("keyup", (e) => keys[e.key] = false);
+
+// CONTROLES NA TELA (CELULAR)
+let touchUp = false;
+let touchDown = false;
+
+document.addEventListener("touchstart", (e) => {
+  let y = e.touches[0].clientY;
+  if (y < canvas.height / 2) touchUp = true;
+  else touchDown = true;
+});
+
+document.addEventListener("touchend", () => {
+  touchUp = false;
+  touchDown = false;
+});
+
+function update() {
+  if (gameOver) return;
+
+  if (keys["ArrowUp"] || touchUp) player.y -= player.speed;
+  if (keys["ArrowDown"] || touchDown) player.y += player.speed;
+
+  enemies.forEach(e => e.x -= e.speed);
+
+  enemies.forEach(e => {
+    if (
+      player.x < e.x + e.width &&
+      player.x + player.width > e.x &&
+      player.y < e.y + e.height &&
+      player.y + player.height > e.y
+    ) {
+      gameOver = true;
+    }
+  });
+
+  enemies = enemies.filter(e => e.x > -50);
+}
+
+function drawRoad() {
+  ctx.fillStyle = "#333";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 4;
+
+  // Linha do meio
+  for (let i = 0; i < canvas.width; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(i, canvas.height / 2);
+    ctx.lineTo(i + 20, canvas.height / 2);
+    ctx.stroke();
+  }
+}
+
+function drawCar(car, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(car.x, car.y, car.width, car.height);
+}
+
+function draw() {
+  drawRoad();
+
+  drawCar(player, "blue");
+  enemies.forEach(e => drawCar(e, "red"));
+
+  if (gameOver) {
+    ctx.fillStyle = "white";
+    ctx.font = "40px Arial";
+    ctx.fillText("GAME OVER", canvas.width / 2 - 120, canvas.height / 2);
+  }
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
